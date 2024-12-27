@@ -1,0 +1,81 @@
+* Cell Sort
+
+This is a verilog module which maintains a sorted list.
+
+A new value can be added every clock cycle, and this module will maintain the highest (or lowest) valued ~DEPTH~ number of elements.
+
+Two ports are provided, ~data_i~ and ~metadata_i~. Sorting is only done on the value of the ~data_i~ field. ~metadata_i~ enables carrying extra non-sorting data.
+
+The sorting mechanism is fast and should be able to maintain large numbers of sorted elements; performance is limited by the number of sorting bits required.
+
+** Mechanism
+
+The incoming data is distributed to a collection of "cells". Each cell looks at the input data and performs a comparison of ~new_data > data~. If the this condition is satisfied, then the contents of the cell /might/ be updated with the new value, and the old value pushed to the neighboring cell to the left.
+
+Whether this "/might/" shift takes place depends on the value of the comparator to the right of the current cell.
+
+The structure performs an insertion by identifying the location in the chain in which all cells to the right are "better" or equal to the new data, while all cells to the left are worse.
+
+When a new data field is being inserted, the cell to the right of the insertion point will /not/ assert a push signal, while the insertion point and all cells to the left will assert a push signal, causing insertion at the correct point and a left-shift of the previous data.
+
+#+begin_src
+                                   data_i
+                                      │
+        ┌──────────────┬──────────────┼──────────────┬──────────────┐
+        │              │              │              │              │
+        │              │              │              │              │
+   ┌────╵────┐    ┌────╵────┐    ┌────╵────┐    ┌────╵────┐    ┌────╵────┐
+   │  Worst  │    │         │    │         │    │         │    │  Best   │
+   │  Cell   │ <─ │  Cell   │ <─ │  Cell   │ <─ │  Cell   │ <─ │  Cell   │
+   │         │push│         │push│         │push│         │push│         │
+   └─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘
+
+#+end_src
+
+To give a concrete example:
+
+Consider a collection of signals:
+
+#+begin_src
+      a     b     c     d     e     f
+      1     3     4     6     7     8
+#+end_src
+
+We want to now insert a new value of ~5~.
+
+#+begin_src
+      a     b     c     d     e     f
+push
+5>i?  t     t     t     f     f     f
+      1     3     4     6     7     8
+#+end_src
+
+The action of the ~push~ field, will shift the lower fields by one to the left. The lowest quality field will be popped off. Since the ~c~ field has ~push[n+1] == False~ it will copy the new value (5) into its cell.
+
+#+begin_src
+      a     b     c     d     e     f
+      3     4     5     6     7     8
+#+end_src
+
+Because communication is only a unidirectional flag from one cell to the right, and a data copy from one cell to the right, the logic is relatively localized and can maintain fairly large collections without timing issues.
+
+** Parameters
+
+| Field | Description                                                                               |
+|-------+-------------------------------------------------------------------------------------------|
+| SORTB | Number of bits to sort on                                                                 |
+| METAB | Number of metadata bits. These values will not be used in sorting and can be set to zero. |
+| DEPTH | Number of elements to retain.                                                             |
+| REV   | Reverse the sorting direction: 0==prefer larger numbers, 1 == prefer smaller.             |
+
+** Ports
+
+| Field      | Dir | Description                                                |
+|------------+-----+------------------------------------------------------------|
+| clk        | IN  | Clock                                                      |
+| rst        | IN  | Assert to clear memory of sorted items.                    |
+| data_i     | IN  | Sortable data input.                                       |
+| metadata_i | IN  | Non-sorting metadata. Set to zero to disable.              |
+| dav_i      | IN  | Assert when input data is valid and should be loaded.      |
+| data_o     | OUT | Data of 2D [SORTB]*[DEPTH] array of sorted elemements.     |
+| metadata_o | OUT | Metadata of 2D [SORTB]*[DEPTH] array of sorted elemements. |
