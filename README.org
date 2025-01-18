@@ -79,3 +79,4 @@ Because communication is only a unidirectional flag from one cell to the right, 
 | dav_i      | IN  | Assert when input data is valid and should be loaded.      |
 | data_o     | OUT | Data of 2D [SORTB]*[DEPTH] array of sorted elemements.     |
 | metadata_o | OUT | Metadata of 2D [SORTB]*[DEPTH] array of sorted elemements. |
+| updating_o | OUT | Goes high for 1 clock cycle when a cell is updated         |
