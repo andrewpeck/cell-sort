@@ -1,6 +1,6 @@
-// MIT License
+/neighbor_push_o/ MIT License
 //
-// Copyright (c) 2024 Andrew Peck
+// Copyright (c) 2024-2025 Andrew Peck
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,9 @@ module unit_cell # (
   // cell to cell comms out
   output wire [SORTB-1:0] neighbor_data_o,
   output wire [METAB-1:0] neighbor_metadata_o,
-  output wire             neighbor_push_o
+  output wire             neighbor_push_o,
+
+  output wire             updating
 
 );
 
@@ -59,13 +61,16 @@ module unit_cell # (
 
   always_ff @(posedge clk) begin
 
+    updating <= 0;
     if (dav_i) begin
       if (neighbor_push_i)  begin
         data     <= neighbor_data_i;
         metadata <= neighbor_metadata_i;
+        updating <= 1;
       end else if (comparator) begin
         data     <= data_i;
         metadata <= metadata_i;
+        updating <= 1;
       end
     end
 

@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2024 Andrew Peck
+// Copyright (c) 2024-2025 Andrew Peck
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,12 +39,14 @@ module cell_sort # (
   input wire             dav_i,
 
   output reg [SORTB-1:0] data_o [DEPTH],
-  output reg [METAB-1:0] metadata_o [DEPTH]
+  output reg [METAB-1:0] metadata_o [DEPTH],
+  output reg [DEPTH-1:0] updating_o
 );
 
   wire [0:0]       push [DEPTH+1];
   wire [SORTB-1:0] data [DEPTH+1];
   wire [METAB-1:0] metadata [DEPTH+1];
+  wire [DEPTH-1:0] updating;
 
   assign push[DEPTH] = 0; // the "best" cell never gets pushed into
 
@@ -53,6 +55,7 @@ module cell_sort # (
     for (int i=0; i<DEPTH; i=i+1) begin
       data_o[i] <= data[i];
       metadata_o[i] <= metadata[i];
+      updating_o[i] <= updating[i];
     end
   end
 
@@ -80,8 +83,10 @@ module cell_sort # (
         // data outputs
         .neighbor_data_o     (data[i-1]),
         .neighbor_metadata_o (metadata[i-1]),
-        .neighbor_push_o     (push[i-1]));
+        .neighbor_push_o     (push[i-1]),
 
+        .updating            (updating[i])
+      );
     end
   end
   endgenerate
